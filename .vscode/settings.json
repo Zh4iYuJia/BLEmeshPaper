@@ -1,0 +1,31 @@
+{
+    "latex-workshop.latex.tools": [
+        {
+            "name": "make",
+            "command": "make",
+            "args": [
+                "all"
+            ],
+            "env": {}
+        },
+        {
+            "name": "clean",
+            "command": "make",
+            "args": [
+                "clean"
+            ],
+            "env": {}
+        }
+    ],
+    "latex-workshop.latex.recipes": [
+        {
+            "name": "make",
+            "tools": [
+                "make",
+                "clean"
+            ]
+        }
+    ],
+    "latex-workshop.view.pdf.viewer": "tab",
+    "latex-workshop.intellisense.package.enabled": true
+}

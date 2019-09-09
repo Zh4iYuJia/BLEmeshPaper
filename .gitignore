@@ -230,7 +230,7 @@ pythontex-files-*/
 
 # Latexian
 TSWLatexianTemp*
-
+.DS_Store
 ## Editors:
 # WinEdt
 *.bak
