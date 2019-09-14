@@ -656,6 +656,8 @@
 \thu@def@term{postdocenddate}
 \newcommand{\thu@@cabstract}[1]{\long\gdef\thu@cabstract{#1}}
 \newenvironment{cabstract}{\Collect@Body\thu@@cabstract}{}
+\newcommand{\thu@@schoollogo}[1]{\long\gdef\thu@schoollogo{#1}}
+\newenvironment{schoollogo}{\Collect@Body\thu@@schoollogo}{}
 \newcommand{\thu@@eabstract}[1]{\long\gdef\thu@eabstract{#1}}
 \newenvironment{eabstract}{\Collect@Body\thu@@eabstract}{}
 \def\thu@parse@keywords#1{
@@ -825,6 +827,8 @@
     \vspace*{-1.6cm}
     \parbox[b][2.4cm][t]{\textwidth}{%
       \ifthu@secret{\heiti\sanhao\thu@secretlevel\thu@secret@content}\else\rule{1cm}{0cm}\fi}
+    \vspace{-1.5cm}
+    \thu@schoollogo
     \ifthu@bachelor
       \vskip0.65cm
       {\ifcsname lishu\endcsname\yihao\lishu\ziju{0.5}\thu@schoolname\else\includegraphics{tsinghua.pdf}\fi}
