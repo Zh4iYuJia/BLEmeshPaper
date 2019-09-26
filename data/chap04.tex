@@ -42,4 +42,10 @@ BLE Mesh节点不同于一般智能家居设备，它们之间通过另一个BLE
 
 \section{移动端}
 \label{design:mobile}
-内容
+移动端包含了UI层、设备层及自动化层。UI层支持用户查看所有设备的状态、控制所有设备及添加自动化流程。设备层支持通过单个BLE Mesh节点代理入网的方式及通过连接至网关端WebSocket插件的方式访问整个智能家居网络。而自动化层支持用户在本机执行自动化流程或将自动化流程提交到网关。
+\begin{figure}[H]
+    \centering
+    \includegraphics{arch_mobile.pdf}
+    \caption{基于BLE Mesh的智能家居平台移动端架构图}
+    \label{fig:arch}
+\end{figure}
