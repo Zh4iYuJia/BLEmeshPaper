@@ -16,6 +16,7 @@ BLE Mesh节点主要实现传感器、继电器、灯泡等设备的接入，并
 \end{figure}
 
 \section{BLE Mesh节点}
+\label{design:blemeshnode}
 BLE Mesh节点不同于一般智能家居设备，它们之间通过另一个BLE Mesh分发节点或手机分发配置后构成网状网络，之后所有数据就可通过其他节点转发至目标设备。
 
 每个节点均可接入多个模块，例如继电器、开关、传感器等。不需要每个模块都单独配一套蓝牙通讯装置，节约了成本也节约了频段资源。
@@ -24,11 +25,21 @@ BLE Mesh节点不同于一般智能家居设备，它们之间通过另一个BLE
 \begin{figure}[H]
     \centering
     \includegraphics{arch_mesh.pdf}
-    \caption{BLE Mesh网络架构图}
+    \caption{基于BLE Mesh的智能家居平台BLE Mesh网络架构图}
     \label{fig:arch}
 \end{figure}
-\section{网关端}
 
+\section{网关端}
+网关端实现了设备层与管理应用层的连接，即将不同的智能设备（如~\ref{design:blemeshnode}~章所提到的BLE Mesh节点等）与不同的管理平台（如~\ref{design:mobile}~章所提到的基于BLE Mesh的智能家居平台移动端、Apple HomeKit等）相连接。
+
+网关端还创新性地采用了插件化的方案，使得爱好者或智能家居厂商可自行按照网关端插件API编写对应插件，让家中所有的智能设备最终能在一个平台上进行管理。目前本项目已开发的插件有BLE Mesh插件（用于连接BLE Mesh节点）、本项目移动端所使用的WebSocket插件（将设备以WebSocket的方式暴露到内网便于移动端连接）以及Apple HomeKit插件（将设备以符合Apple HomeKit方式暴露到内网便于苹果设备上的“家庭”应用连接）。
+\begin{figure}[H]
+    \centering
+    \includegraphics{arch_gateway.pdf}
+    \caption{基于BLE Mesh的智能家居平台网关端架构图}
+    \label{fig:arch}
+\end{figure}
 
 \section{移动端}
+\label{design:mobile}
 内容
