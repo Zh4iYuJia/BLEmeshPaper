@@ -1,11 +1,22 @@
 \chapter{基于BLE Mesh的智能家居平台实现}
+\section{开发语言的选择}
+现今，市面上有许多开发语言可供选择，它们各自有各自的优点，如C/C++语言执行速度快，程序占用空间小；Go语言代码简洁，执行速度快；Dart语言易于编写，使用Flutter框架后还可实现一套代码就能编译出iOS/Android端的App。
+
+对于本项目的BLE Mesh节点而言，其性能不高且存储空间狭小，因此选择了C语言作为开发语言。
+
+对于本项目的网关端而言，其性能充足但需要高扩展性且逻辑复杂，为了开发方便，因此选择了Go语言作为开发语言。
+
+对于本项目的移动端而言，需要同时支持Android与iOS系统，为了界面逻辑统一，因此选择了Dart语言与Flutter框架作为开发语言。
+\section{集成开发环境的选择}
+
+\section{逻辑部分的实现}
+\subsection{BLE Mesh节点}
+内容
+\subsubsection{Server}
+\subsubsection{Provisioner}
+
+\subsection{网关端}
 内容
 
-\section{BLE Mesh节点}
-内容
-
-\section{网关端}
-内容
-
-\section{移动端}
+\subsection{移动端}
 内容
