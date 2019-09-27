@@ -63,6 +63,7 @@
 \thu@validate@key{language}
 \PassOptionsToPackage{quiet}{xeCJK}
 \LoadClass[a4paper,openany,UTF8,zihao=-4,scheme=plain]{ctexbook}
+\RequirePackage{listings}
 \RequirePackage{etoolbox}
 \RequirePackage{xparse}
 \RequirePackage{amsmath}
