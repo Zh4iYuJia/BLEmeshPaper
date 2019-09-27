@@ -101,9 +101,69 @@ Provisioner节点上电后初始化BLE、Mesh协议栈，从，等待接收Serve
     \label{fig:code_mesh_provisioner}
 \end{figure}
 
-
 \subsection{网关端}
-内容
+网关端在启动后扫描plugin/accessory和plugin/consumer目录下的插件，并一一加载设备层插件，获取所有节点列表后，再一一加载管理应用层插件，以协程的方式并行启动每个插件的工作函数，最后阻塞主协程。
+
+\begin{figure}[H]
+    \centering
+    \includegraphics{flowchart_gateway.pdf}
+    \caption{基于BLE Mesh的智能家居平台网关端流程图}
+    \label{fig:flowchart_gateway}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{lstlisting}[language=Go]
+    func LoadAccessoryPlugin(){
+        accpluginfiles,_:=ioutil.ReadDir(AccPluginDir)
+        for _, f := range accpluginfiles{
+            plug, err := plugin.Open(AccPluginDir+f.Name())
+            sym, err := plug.Lookup("Plugin")
+            accplugin := sym.(AccessoryPlugin)
+            AccessoryPluginList = append(AccessoryPluginList, accplugin)
+        }
+    }
+    func LoadConsumerPlugin(){
+        conpluginfiles,_:=ioutil.ReadDir(ConPluginDir)
+        for _, f := range conpluginfiles{
+            plug, err := plugin.Open(ConPluginDir+f.Name())
+            sym, err := plug.Lookup("Plugin")
+            conplugin := sym.(ConsumerPlugin)
+            ConsumerPluginList = append(ConsumerPluginList, conplugin)
+        }
+    }
+    func InitAccessoryPlugin(){
+        for _, accplugin := range AccessoryPluginList{
+            accplugin.Init(Shutdown)
+            AccessoryList = append(AccessoryList,accplugin.GetAccessoryList()...)
+        }
+    }
+    func InitConsumerPlugin(){
+	    for _, conplugin := range ConsumerPluginList{
+	    	conplugin.Init(AccessoryList)
+	    }
+    }
+    func main(){
+        LoadAccessoryPlugin()
+        LoadConsumerPlugin()
+        InitAccessoryPlugin()
+        InitConsumerPlugin()
+        for _, accplugin := range AccessoryPluginList{
+            go accplugin.Worker()
+        }
+        for _, conplugin := range ConsumerPluginList{
+            go conplugin.Worker()
+        }
+        for{
+            c := ""
+            _, _ = fmt.Scanln(&c)
+            if c == "stop"{Shutdown()}
+        }
+    }
+    \end{lstlisting}
+    \caption{基于BLE Mesh的智能家居平台网关端关键代码}
+    \label{fig:code_gateway}
+\end{figure}
 
 \subsection{移动端}
 内容
