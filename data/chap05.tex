@@ -14,10 +14,53 @@
 在网关端开发上，目前针对Go语言的集成开发环境主要有GoLand与VS Code，但GoLand功能更为强大，能很好地进行调试以及包管理，因此选择了GoLand作为网关端的集成开发环境。
 
 在移动端开发上，目前Google推荐使用Android Studio进行Dart+Flutter的开发，因此选择了Android Studio作为移动端的集成开发环境。
+
 \section{逻辑部分的实现}
 \subsection{BLE Mesh节点}
-内容
+BLE Mesh节点主要分为两个角色，一个是Server，一个是Provisioner。Server作为连接继电器、传感器等模块的角色，而Provisioner则负责给未配置的Server节点发放BLE Mesh网络配置。
+
 \subsubsection{Server}
+Server节点在上电后初始化BLE、Mesh协议栈及其他参数，开始发送Unprovisioned Node Beacon广播信息，等待Provisioner分发配置，配网成功后注册GATT服务与传感器服务，以便移动端或网关端BLE Mesh插件通过此节点代理入网，并允许其他节点访问它的模块。
+
+\begin{figure}[H]
+    \centering
+    \includegraphics{flowchart_mesh_server.pdf}
+    \caption{基于BLE Mesh的智能家居平台BLE Mesh Server节点流程图}
+    \label{fig:flowchart_mesh_server}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{lstlisting}[language=C]
+        ble_stack_init();
+        gap_params_init();
+        conn_params_init();
+        mesh_init();
+        //初始化蓝牙协议栈、GATT参数、传感器参数、Mesh协议栈
+        if (!m_device_provisioned){
+            //设备未配网
+            static const uint8_t static_auth_data[NRF_MESH_KEY_SIZE] = STATIC_AUTH_DATA;
+            //配置OOB预认证密钥
+            mesh_provisionee_start_params_t prov_start_params = {
+                .p_static_data    = static_auth_data,
+                .prov_complete_cb = provisioning_complete_cb,
+                .prov_device_identification_start_cb = device_identification_start_cb,
+                .prov_device_identification_stop_cb = NULL,
+                .prov_abort_cb = provisioning_aborted_cb,
+                .p_device_uri = EX_URI_LS_SERVER
+            };
+            mesh_provisionee_prov_start(&prov_start_params);
+            //启动Provisionee过程，等待配网结束
+        }
+        mesh_app_uuid_print(nrf_mesh_configure_device_uuid_get());
+        //输出配网后分配到的设备UUID以供调试使用
+        mesh_stack_start();
+        //启动Mesh协议栈
+    \end{lstlisting}
+    \caption{基于BLE Mesh的智能家居平台BLE Mesh Server节点关键代码}
+    \label{fig:code_mesh_server}
+\end{figure}
+
 \subsubsection{Provisioner}
 
 \subsection{网关端}
