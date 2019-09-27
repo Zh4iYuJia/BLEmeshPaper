@@ -2,13 +2,18 @@
 \section{开发语言的选择}
 现今，市面上有许多开发语言可供选择，它们各自有各自的优点，如C/C++语言执行速度快，程序占用空间小；Go语言代码简洁，执行速度快；Dart语言易于编写，使用Flutter框架后还可实现一套代码就能编译出iOS/Android端的App。
 
-对于本项目的BLE Mesh节点而言，其性能不高且存储空间狭小，因此选择了C语言作为开发语言。
+对于本项目的BLE Mesh节点而言，其性能不高且存储空间狭小，并且需使用Nordic芯片厂商所提供的nRF5 SDK for Mesh，因此选择了C语言作为开发语言。
 
 对于本项目的网关端而言，其性能充足但需要高扩展性且逻辑复杂，为了开发方便，因此选择了Go语言作为开发语言。
 
 对于本项目的移动端而言，需要同时支持Android与iOS系统，为了界面逻辑统一，因此选择了Dart语言与Flutter框架作为开发语言。
-\section{集成开发环境的选择}
 
+\section{集成开发环境的选择}
+在BLE Mesh节点开发上，目前针对嵌入式开发并支持C语言主要是SEGGER Embedded Studio及Keil，SEGGER Embedded Studio相较于Keil更加易用，并且能很好地兼容nRF5 SDK for Mesh，因此选择了SEGGER Embedded Studio作为BLE Mesh节点的集成开发环境。
+
+在网关端开发上，目前针对Go语言的集成开发环境主要有GoLand与VS Code，但GoLand功能更为强大，能很好地进行调试以及包管理，因此选择了GoLand作为网关端的集成开发环境。
+
+在移动端开发上，目前Google推荐使用Android Studio进行Dart+Flutter的开发，因此选择了Android Studio作为移动端的集成开发环境。
 \section{逻辑部分的实现}
 \subsection{BLE Mesh节点}
 内容
