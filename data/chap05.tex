@@ -32,36 +32,75 @@ Server节点在上电后初始化BLE、Mesh协议栈及其他参数，开始发�
 \begin{figure}[H]
     \centering
     \begin{lstlisting}[language=C]
-        ble_stack_init();
-        gap_params_init();
-        conn_params_init();
-        mesh_init();
-        //初始化蓝牙协议栈、GATT参数、传感器参数、Mesh协议栈
-        if (!m_device_provisioned){
-            //设备未配网
-            static const uint8_t static_auth_data[NRF_MESH_KEY_SIZE] = STATIC_AUTH_DATA;
-            //配置OOB预认证密钥
-            mesh_provisionee_start_params_t prov_start_params = {
-                .p_static_data    = static_auth_data,
-                .prov_complete_cb = provisioning_complete_cb,
-                .prov_device_identification_start_cb = device_identification_start_cb,
-                .prov_device_identification_stop_cb = NULL,
-                .prov_abort_cb = provisioning_aborted_cb,
-                .p_device_uri = EX_URI_LS_SERVER
-            };
-            mesh_provisionee_prov_start(&prov_start_params);
-            //启动Provisionee过程，等待配网结束
-        }
-        mesh_app_uuid_print(nrf_mesh_configure_device_uuid_get());
-        //输出配网后分配到的设备UUID以供调试使用
-        mesh_stack_start();
-        //启动Mesh协议栈
+    ble_stack_init();
+    gap_params_init();
+    conn_params_init();
+    mesh_init();
+    //初始化蓝牙协议栈、GATT参数、传感器参数、Mesh协议栈
+    if (!m_device_provisioned){
+        //设备未配网
+        static const uint8_t static_auth_data[NRF_MESH_KEY_SIZE] = STATIC_AUTH_DATA;
+        //配置OOB预认证密钥
+        mesh_provisionee_start_params_t prov_start_params = {
+            .p_static_data    = static_auth_data,
+            .prov_complete_cb = provisioning_complete_cb,
+            .prov_device_identification_start_cb = device_identification_start_cb,
+            .prov_device_identification_stop_cb = NULL,
+            .prov_abort_cb = provisioning_aborted_cb,
+            .p_device_uri = EX_URI_LS_SERVER
+        };
+        mesh_provisionee_prov_start(&prov_start_params);
+        //启动Provisionee过程，等待配网结束
+    }
+    mesh_app_uuid_print(nrf_mesh_configure_device_uuid_get());
+    //输出配网后分配到的设备UUID以供调试使用
+    mesh_stack_start();
+    //启动Mesh协议栈
     \end{lstlisting}
     \caption{基于BLE Mesh的智能家居平台BLE Mesh Server节点关键代码}
     \label{fig:code_mesh_server}
 \end{figure}
 
 \subsubsection{Provisioner}
+Provisioner节点上电后初始化BLE、Mesh协议栈，从，等待接收Server节点发送的Unprovisioned Node Beacon广播，与Server节点协商通信使用的加密算法，交换非对称加密算法的公钥，之后验证Server节点的OOB预配置密钥，验证成功后向Server节点发送加密后配网信息，之后再重新开始接收未配置节点对广播，为每一个未配置的Server节点进行配网操作。
+
+\begin{figure}[H]
+    \centering
+    \includegraphics{flowchart_mesh_provisioner.pdf}
+    \caption{基于BLE Mesh的智能家居平台BLE Mesh Provisioner节点流程图}
+    \label{fig:flowchart_mesh_provisioner}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{lstlisting}[language=C]
+    static void startprovision(){
+        static const char * uri_list[1];
+        uri_list[0] = server_uri_index_select(m_nw_state.p_client_uri);
+        //设置可用的配网器为自己
+        prov_helper_provision_next_device(PROVISIONER_RETRY_COUNT, m_nw_state.next_device_address, uri_list, ARRAY_SIZE(uri_list));
+        //开始对未配网列表中的首个设备进行配网
+        prov_helper_scan_start();
+        //配网完成，继续扫描未配网设备
+    }
+
+    static void start(){
+        //程序入口
+        ble_stack_init();
+        mesh_init();
+        //初始化蓝牙协议栈、Mesh协议栈
+        nrf_mesh_enable();
+        //启动Mesh协议栈
+        while(true){
+            startprovision();
+            //进行配网操作
+        }
+    }
+    \end{lstlisting}
+    \caption{基于BLE Mesh的智能家居平台BLE Mesh Provisioner节点关键代码}
+    \label{fig:code_mesh_provisioner}
+\end{figure}
+
 
 \subsection{网关端}
 内容
