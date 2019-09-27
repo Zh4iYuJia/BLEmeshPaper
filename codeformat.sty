@@ -1,0 +1,24 @@
+\ProvidesPackage{codeformat}
+\newfontfamily\firacode{Fira Code}
+\definecolor{code_skyblue}{rgb}{0,0.9,0}
+\definecolor{code_green}{rgb}{0,0.7,0}
+\definecolor{code_gray}{rgb}{0.5,0.5,0.5}
+\definecolor{code_purple}{rgb}{0.6,0,0.8}
+\definecolor{code_red}{rgb}{0.79,0,0}
+\definecolor{code_bgcolor}{rgb}{0.95,0.95,0.95}
+\lstdefinestyle{code}{
+    backgroundcolor=\color{code_bgcolor},
+    basicstyle=\footnotesize\firacode,        % the size of the fonts that are used for the code
+    breakatwhitespace=false,         % sets if automatic breaks should only happen at whitespace
+    breaklines=true,                 % sets automatic line breaking
+    captionpos=b,                    % sets the caption-position to bottom
+    commentstyle=\color{code_green}\firacode,    % comment style
+    extendedchars=true,              % lets you use non-ASCII characters; for 8-bits encodings only, does not work with UTF-8
+    keywordstyle=\color{code_purple}\firacode,       % keyword style
+    numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=5pt,                   % how far the line-numbers are from the code
+    numberstyle=\tiny\color{code_gray}\firacode, % the style that is used for the line-numbers
+    stringstyle=\color{code_red}\firacode,     % string literal style
+    tabsize=4,	                   % sets default tabsize to 2 spaces
+}
+\lstset{style=code}
