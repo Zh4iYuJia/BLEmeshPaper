@@ -63,7 +63,6 @@
 \thu@validate@key{language}
 \PassOptionsToPackage{quiet}{xeCJK}
 \LoadClass[a4paper,openany,UTF8,zihao=-4,scheme=plain]{ctexbook}
-\RequirePackage{listings}
 \RequirePackage{etoolbox}
 \RequirePackage{xparse}
 \RequirePackage{amsmath}
@@ -1043,7 +1042,6 @@
     \box\thu@kw#2\par
   \endgroup}
 \newcommand{\thu@makeabstract}{%
-  \ifthu@bachelor\clearpage\else\cleardoublepage\fi
   \thu@setchinese
   \thu@chapter*[]{\cabstractname} % no tocline
   \ifthu@bachelor
