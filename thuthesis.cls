@@ -1042,7 +1042,6 @@
     \box\thu@kw#2\par
   \endgroup}
 \newcommand{\thu@makeabstract}{%
-  \ifthu@bachelor\clearpage\else\cleardoublepage\fi
   \thu@setchinese
   \thu@chapter*[]{\cabstractname} % no tocline
   \ifthu@bachelor
