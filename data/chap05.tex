@@ -17,7 +17,7 @@
 
 \section{逻辑部分的实现}
 \subsection{BLE Mesh节点}
-BLE Mesh节点主要分为两个角色，一个是Server，一个是Provisioner。Server作为连接继电器、传感器等模块的角色，而Provisioner则负责给未配置的Server节点发放BLE Mesh网络配置。
+BLE Mesh节点主要分为两个角色，一个是Server，一个是Provisioner。Server作为连接继电器、传感器等模块的角色，而Provisioner则负责给未配置的Server节点发放BLE Mesh网络配置。本项目采用Nordic的nRF5 SDK for Mesh来处理BLE Mesh协议栈的底层调用。
 
 \subsubsection{Server}
 Server节点在上电后初始化BLE、Mesh协议栈及其他参数，开始发送Unprovisioned Node Beacon广播信息，等待Provisioner分发配置，配网成功后注册GATT服务与传感器服务，以便移动端或网关端BLE Mesh插件通过此节点代理入网，并允许其他节点访问它的模块。
@@ -166,4 +166,112 @@ Provisioner节点上电后初始化BLE、Mesh协议栈，从，等待接收Serve
 \end{figure}
 
 \subsection{移动端}
-内容
+
+\subsubsection{连接设备}
+移动端在用户点击连接设备后，可选择通过蓝牙连接以及通过WLAN连接。
+
+点击通过蓝牙连接，进入蓝牙扫描状态，搜索附近的蓝牙Mesh节点，弹出列表让用户选择后连接，即可通过单一节点代理入网，控制整个网络中的节点及所连接的模块。
+
+点击通过WLAN连接，进入局域网扫描状态，搜索整个网络中已启用WebSocket插件的网关端，弹出列表让用户选择后连接，即可访问网关设备层中的所有节点及所连接的模块。
+
+\begin{figure}[H]
+    \centering
+    \includegraphics{flowchart_mobile_connect.pdf}
+    \caption{基于BLE Mesh的智能家居平台移动端连接设备流程图}
+    \label{fig:flowchart_mobile_connect}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{lstlisting}[language=Java]
+    BluetoothAdd() {
+        meshnodes = scanMeshNodes();
+        for(int i=0;i<meshnodes.length;i++){
+          meshnodewidgets.add(Card(child: ListTile(onTap: (){
+            connectmeshnode(meshnodes[i]);
+          },leading: Icon(Icons.bluetooth),title: Text(meshnodes[i].name))));
+        }
+        showModalBottomSheet(context:this.context,builder:(BuildContext context) {
+          return new ListView(children: <Widget>[
+            Padding(padding:EdgeInsets.all(20),child:Text("选择 BLE Mesh 节点",textAlign: TextAlign.left,
+              style: TextStyle(fontWeight: FontWeight.bold,fontSize: 20),)),
+            ]+meshnodewidgets);
+        });
+    }
+    \end{lstlisting}
+    \caption{基于BLE Mesh的智能家居平台移动端通过蓝牙连接关键代码}
+    \label{fig:code_mobile_connect_ble}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{lstlisting}[language=Java]
+    IPAdd() {
+        ipnodes = scanIPNodes();
+        for(int i=0;i<ipnodes.length;i++){
+          ipnodewidgets.add(Card(child: ListTile(onTap: (){
+            connectipnode(ipnodes[i]);
+          },leading: Icon(Icons.router),title: Text(ipnodes[i].name),subtitle: Text(ipnodes[i].address))));
+        }
+        showModalBottomSheet(context:this.context,builder:(BuildContext context) {
+          return new ListView(children: <Widget>[
+            Padding(padding:EdgeInsets.all(20),child:Text("选择网关",textAlign: TextAlign.left,
+              style: TextStyle(fontWeight: FontWeight.bold,fontSize: 20),)),
+            ]+ipnodewidgets);
+        });
+    }
+    \end{lstlisting}
+    \caption{基于BLE Mesh的智能家居平台移动端通过WLAN连接关键代码}
+    \label{fig:code_mobile_connect_wlan}
+\end{figure}
+
+\subsubsection{控制配件}
+在配件列表中，点击可控制的服务后，进行电源状态的切换或弹出其他可调整项，之后将更新发送至连接的BLE Mesh节点或网关端，完成配件的控制。
+
+\begin{figure}[H]
+    \centering
+    \begin{lstlisting}[language=Java]
+    case SERVICE_LIGHTBULB:
+        Characteristic c = srv.getCharacteristic(CHAR_ON);
+        srv.name = "灯泡";
+        value = dynamictoT<bool>(c.value)?"开":"关";
+        icon = Icons.lightbulb_outline;
+        onclick = (){
+            c.value = !dynamictoT<bool>(c.value);
+            if(srv.ble){
+                bleupdate(srv.aid,c.cid);
+            }else{
+                wlanupdate(srv.aid,c.cid);
+            }
+        }
+    \end{lstlisting}
+    \caption{基于BLE Mesh的智能家居平台移动端控制灯泡服务关键代码}
+    \label{fig:code_mobile_control_lightbulb}
+\end{figure}
+
+\subsubsection{自动化}
+在自动化列表中，点击添加自动化按钮后，弹出选择触发服务菜单，选择用于触发的服务后，进入对应服务的条件界面，设置条件后点击下一步弹出选择操作服务菜单，进入对应服务的操作界面，设置操作后点击完成即添加完成。
+
+\begin{figure}[H]
+    \centering
+    \includegraphics{flowchart_mobile_add_automation.pdf}
+    \caption{基于BLE Mesh的智能家居平台移动端添加自动化流程图}
+    \label{fig:flowchart_mobile_connect}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{lstlisting}[language=Java]
+    AddAutomation(){
+        automation = new Automation();
+        automation.trigger = gettriggerfrommodal();
+        automation.when = getwhenfrommodal();
+        automation.opservice = getopsrvfrommodal();
+        automation.op = getopfrommodal();
+        wlanaddautomation(automation);
+        automationlist.add(automation);
+    }
+    \end{lstlisting}
+    \caption{基于BLE Mesh的智能家居平台移动端添加自动化关键代码}
+    \label{fig:code_mobile_add_automation}
+\end{figure}
