@@ -102,7 +102,10 @@ Provisioner节点上电后初始化BLE、Mesh协议栈，从，等待接收Serve
 \end{figure}
 
 \subsection{网关端}
-网关端在启动后扫描plugin/accessory和plugin/consumer目录下的插件，并一一加载设备层插件，获取所有节点列表后，再一一加载管理应用层插件，以协程的方式并行启动每个插件的工作函数，最后阻塞主协程。
+\subsubsection{主程序}
+网关端在启动后扫描plugin/accessory和plugin/consumer目录下的插件，并一一加载设备层插件，获取所有节点列表后，再一一加载管理应用层插件，以协程的方式并行启动每个插件的工作函数，最后阻塞主协程（如图~\ref{fig:flowchart_gateway}~，图~\ref{fig:code_gateway}）。
+
+网关端还使用了brutella/hc项目中的智能家居结构模型（如图~\ref{fig:hc_structure}），即将每个节点看作Accessory（配件），将节点上所接入的模块模块看作Service（服务），将每个模块能提供或设定的数据看作Characteristic（特性）。
 
 \begin{figure}[H]
     \centering
@@ -163,6 +166,153 @@ Provisioner节点上电后初始化BLE、Mesh协议栈，从，等待接收Serve
     \end{lstlisting}
     \caption{基于BLE Mesh的智能家居平台网关端关键代码}
     \label{fig:code_gateway}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics{hc_structure.pdf}
+    \caption{brutella/hc项目中的智能家居结构模型示意图}
+    \label{fig:hc_structure}
+\end{figure}
+
+\subsubsection{BLE Mesh插件}
+BLE Mesh插件在启动后连接最近的BLE Mesh节点，然后获取Mesh网络中所有的节点及其服务，之后将信息转化为Accessory对象，用Characteristic中的闭包来处理更新事件，
+
+\begin{figure}[H]
+    \centering
+    \includegraphics{flowchart_gateway_plugin_blemesh.pdf}
+    \caption{基于BLE Mesh的智能家居平台网关端BLE Mesh插件流程图}
+    \label{fig:flowchart_gateway_plugin_blemesh}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{lstlisting}[language=Go]
+    func (p *AccPlugin) Init(){
+        p.Meshnodes = ConnectToMeshNetwork()
+        meshaccessories := MeshNode2Accessory(p.Meshnodes)
+        for accid, acc := range meshaccessories{
+            for _, srv := range acc.Services{
+                for _, cha := range srv.Characteristics{
+                    cha.OnValueUpdate(func(c *characteristic.Characteristic, newValue, oldValue interface{}){
+                        meshnodes[accid].notify(c.Type,newValue)
+                    })
+                }
+            }
+        }
+        p.AccessoryList = meshaccessories
+    }
+    func (p *AccPlugin) GetAccessoryList() []*accessory.Accessory{
+	    return p.AccessoryList
+    }
+    func (p *AccPlugin) Worker(){
+        for _, meshnode := range p.Meshnodes{
+            meshnode.AddListener(func(type String,value interface{}){
+                meshnode.Accessory.Change(type, value)
+            })
+        }
+    }
+    \end{lstlisting}
+    \caption{基于BLE Mesh的智能家居平台网关端BLE Mesh插件关键代码}
+    \label{fig:code_gateway_plugin_blemesh}
+\end{figure}
+
+\subsubsection{WebSocket插件}
+WebSocket插件在初始化时对Accessory ID和每个Accessory下的Characteristic重新建索，并启动WebSocket服务，处理更新请求以及在任何Characteristic值更新时向所有客户端发送通知。
+
+\begin{figure}[H]
+    \centering
+    \begin{lstlisting}[language=Go]
+    func (p *ConPlugin) Init(list []*accessory.Accessory) {
+        p.AccessoryList = list
+        for id, acc := range p.AccessoryList {
+		for _, srv := range acc.Services {
+			for _, cha := range srv.Characteristics {
+				p.Cmap[acc.ID][cha.ID] = cha
+				func(accid int64) {
+					cha.OnValueUpdate(func(c *characteristic.Characteristic, newValue, oldValue interface{}) {
+						for _, conn := range Plugin.WebSocketList {
+							_ = conn.WriteJSON(models.Response{
+								Type: "update",
+								Value: models.UpdateReq{
+									Aid:   accid,
+									Cid:   c.ID,
+									Value: newValue,
+								},
+							})
+						}
+					})
+				}(int64(id)+2)
+			}
+		}
+        }
+    }
+    func (p *ConPlugin) Worker() {
+	    http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+            c, err := upgrader.Upgrade(w, r, nil)
+            Plugin.WebSocketList = append(Plugin.WebSocketList, c)
+            for {
+                _, str, err := c.ReadMessage()
+                err = json.Unmarshal(str, &req)
+                switch req.Command {
+                    case "getaccessorylist":
+                        res.Value = Plugin.AccessoryList
+                        break
+                    case "update":
+                        umap := req.Value.(map[string]interface{})
+                        var updateReq models.UpdateReq
+                        err = mapstructure.Decode(umap, &updateReq)
+                        Plugin.Cmap[updateReq.Aid][updateReq.Cid].UpdateValue(updateReq.Value)
+                }
+                c.WriteJSON(res)
+            })
+	    log.Fatal(http.ListenAndServe(*addr, nil))
+    }
+    \end{lstlisting}
+    \caption{基于BLE Mesh的智能家居平台网关端WebSocket插件关键代码}
+    \label{fig:code_gateway_plugin_websocket}
+\end{figure}
+
+\subsubsection{HomeKit插件}
+HomeKit插件主要调用brutella/hc项目中内置的HomeKit服务端，启动后先生成一个随机配对密钥，再建立一个HomeKit Bridge来作为HomeKit中桥的角色，并将其他的节点挂载到HomeKit Bridge下，最后启动HomeKit服务端来广播HomeKit Bridge。
+
+\begin{figure}[H]
+    \centering
+    \includegraphics{flowchart_gateway_plugin_homekit.pdf}
+    \caption{基于BLE Mesh的智能家居平台网关端HomeKit插件流程图}
+    \label{fig:flowchart_gateway_plugin_homekit}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{lstlisting}[language=Go]
+    func (p *ConPlugin) Init(list []*accessory.Accessory){
+        rand.Seed(time.Now().UnixNano())
+        p.Name = "HomeKit (Non-Commercial)"
+        p.AccessoryList = list
+        p.Bridge = accessory.NewBridge(accessory.Info{
+            Name:             "BLESmartHome HomeKit Bridge",
+            SerialNumber:     "Bridge_001",
+            Manufacturer:     "BLESmartHome",
+            Model:            "Plugin_HomeKit",
+            FirmwareRevision: "0.0.1",
+        })
+        p.Config = hc.Config{
+            StoragePath: "./plugin/consumer/homekit/",
+            Pin:         fmt.Sprintf("%08d",rand.Int()%1e8),
+        }
+    }
+    func (p *ConPlugin) Worker(){
+	    t, err := hc.NewIPTransport(p.Config,p.Bridge.Accessory,p.AccessoryList...)
+	    p.StopIPTransPort = func() {
+	    	t.Stop()
+        }
+	    fmt.Println("HomeKit Pairing Pin: "+p.Config.Pin)
+	    t.Start()
+    }
+    \end{lstlisting}
+    \caption{基于BLE Mesh的智能家居平台网关端HomeKit插件关键代码}
+    \label{fig:code_gateway_plugin_homekit}
 \end{figure}
 
 \subsection{移动端}
